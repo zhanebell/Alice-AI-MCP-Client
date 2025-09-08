@@ -1,0 +1,29 @@
+{
+  "name": "assignment-tracker-mcp-client",
+  "version": "1.0.0",
+  "description": "A comprehensive assignment tracking application with AI integration and MCP server architecture",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "cd backend && pip install -r requirements.txt && cd ../mcp_server && pip install -r requirements.txt && cd ../frontend && npm install",
+    "dev": "concurrently \"cd backend && python main.py\" \"cd frontend && npm run dev\"",
+    "dev-backend": "cd backend && python main.py",
+    "dev-frontend": "cd frontend && npm run dev",
+    "dev-mcp": "cd mcp_server && python server.py",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && python main.py"
+  },
+  "keywords": [
+    "assignment-tracker",
+    "education",
+    "productivity",
+    "ai",
+    "mcp",
+    "fastapi",
+    "react"
+  ],
+  "author": "Alice AI MCP Client",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
