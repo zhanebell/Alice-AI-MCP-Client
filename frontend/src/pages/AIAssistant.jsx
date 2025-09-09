@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   SparklesIcon, 
-  DocumentTextIcon, 
-  PlusIcon, 
-  CheckCircleIcon,
+  PaperAirplaneIcon,
   ExclamationTriangleIcon,
-  ClockIcon
+  BoltIcon,
+  ChartBarIcon,
+  PlusIcon,
+  UserIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline'
 import { aiAPI, classesAPI, pendingAssignmentsAPI, assignmentsAPI } from '../services/api'
 import toast from 'react-hot-toast'
@@ -18,16 +20,19 @@ function AIAssistant() {
   const [loading, setLoading] = useState(false)
   const [aiStatus, setAiStatus] = useState(null)
   const [classes, setClasses] = useState([])
-  const [activeTab, setActiveTab] = useState('syllabus') // 'syllabus' or 'generate'
   
-  // Syllabus parsing state
-  const [syllabusText, setSyllabusText] = useState('')
-  const [syllabusResults, setSyllabusResults] = useState(null)
-  
-  // Assignment generation state
-  const [generatePrompt, setGeneratePrompt] = useState('')
-  const [selectedClassId, setSelectedClassId] = useState('')
-  const [generateResults, setGenerateResults] = useState(null)
+  // Chat state
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: "Hello! I'm Alice, your AI assignment assistant. 👋\n\nI can help you with:\n• **Query information** about your assignments and classes\n• **Create new assignments** or parse syllabi\n• **General conversation** about your academic work\n\nWhat would you like to do today?",
+      sender: 'ai',
+      timestamp: new Date(),
+      agent: 'general'
+    }
+  ])
+  const [inputMessage, setInputMessage] = useState('')
+  const messagesEndRef = useRef(null)
   
   // Pending assignments and editing state
   const [pendingAssignments, setPendingAssignments] = useState([])
@@ -39,6 +44,14 @@ function AIAssistant() {
     fetchClasses()
     fetchPendingAssignments()
   }, [])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const checkAIStatus = async () => {
     try {
@@ -67,81 +80,91 @@ function AIAssistant() {
     }
   }
 
-  const handleParseSyllabus = async (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault()
-    if (!syllabusText.trim()) {
-      toast.error('Please enter syllabus text')
-      return
+    if (!inputMessage.trim()) return
+
+    const userMessage = {
+      id: Date.now(),
+      text: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
     }
 
+    setMessages(prev => [...prev, userMessage])
+    const currentMessage = inputMessage
+    setInputMessage('')
+    setLoading(true)
+
     try {
-      setLoading(true)
-      const response = await aiAPI.parseSyllabus({
-        syllabus_text: syllabusText
+      const response = await aiAPI.chat({
+        message: currentMessage
       })
-      
-      setSyllabusResults(response.data)
-      toast.success(response.data.message)
-      
-      // Refresh classes list if new classes were created
-      if (response.data.classes_created.length > 0) {
-        fetchClasses()
+
+      const aiMessage = {
+        id: Date.now() + 1,
+        text: response.data.response,
+        sender: 'ai',
+        timestamp: new Date(),
+        agent: response.data.agent_used,
+        actionTaken: response.data.action_taken,
+        data: response.data.data
       }
-      
-      // Refresh pending assignments if any were created
-      if (response.data.pending_assignments_created && response.data.pending_assignments_created.length > 0) {
-        fetchPendingAssignments()
+
+      setMessages(prev => [...prev, aiMessage])
+
+      // Refresh data if actions were taken
+      if (response.data.action_taken) {
+        if (response.data.data.classes_created || response.data.data.classes) {
+          fetchClasses()
+        }
+        if (response.data.data.pending_assignments_created || response.data.data.pending_assignments) {
+          fetchPendingAssignments()
+        }
       }
+
     } catch (error) {
-      console.error('Error parsing syllabus:', error)
-      toast.error('Failed to parse syllabus')
+      console.error('Error sending message:', error)
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: "I'm sorry, I'm having trouble processing that right now. Please try again.",
+        sender: 'ai',
+        timestamp: new Date(),
+        agent: 'error'
+      }
+      setMessages(prev => [...prev, errorMessage])
+      toast.error('Failed to send message')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGenerateAssignments = async (e) => {
-    e.preventDefault()
-    if (!generatePrompt.trim()) {
-      toast.error('Please enter a prompt')
-      return
+  const quickActions = [
+    {
+      text: "What assignments do I have due this week?",
+      icon: ChartBarIcon,
+      agent: "query"
+    },
+    {
+      text: "Show me all my classes",
+      icon: ChartBarIcon,
+      agent: "query"
+    },
+    {
+      text: "Create 3 programming assignments for my computer science class",
+      icon: PlusIcon,
+      agent: "create"
+    },
+    {
+      text: "Parse this syllabus and create assignments",
+      icon: PlusIcon,
+      agent: "create"
     }
+  ]
 
-    try {
-      setLoading(true)
-      const response = await aiAPI.generateAssignments({
-        prompt: generatePrompt,
-        class_id: selectedClassId ? parseInt(selectedClassId) : null
-      })
-      
-      setGenerateResults(response.data)
-      toast.success(response.data.message)
-      
-      // Refresh pending assignments if any were created
-      if (response.data.pending_assignments_created && response.data.pending_assignments_created.length > 0) {
-        fetchPendingAssignments()
-      }
-    } catch (error) {
-      console.error('Error generating assignments:', error)
-      toast.error('Failed to generate assignments')
-    } finally {
-      setLoading(false)
-    }
+  const handleQuickAction = (actionText) => {
+    setInputMessage(actionText)
   }
-
-  const sampleSyllabus = `ICS 211 - Introduction to Computer Science II
-Course Description: Advanced programming concepts including data structures, algorithms, and object-oriented programming.
-
-Assignment Schedule:
-- Programming Assignment 1: Basic OOP concepts (Due: September 15, 2024)
-- Programming Assignment 2: Data Structures implementation (Due: October 1, 2024)
-- Midterm Project: Binary Search Tree implementation (Due: October 20, 2024)
-- Programming Assignment 3: Graph algorithms (Due: November 10, 2024)
-- Final Project: Complete application with GUI (Due: December 5, 2024)
-
-Exam Schedule:
-- Midterm Exam: October 25, 2024
-- Final Exam: December 15, 2024`
 
   // Approval and editing functions
   const handleApproveAssignment = async (assignmentId) => {
@@ -211,15 +234,34 @@ Exam Schedule:
     setEditingAssignment(null)
   }
 
-  const samplePrompts = [
-    "Create 3 progressive programming assignments for learning React.js",
-    "Generate study tasks for preparing for a calculus midterm exam",
-    "Design weekly lab assignments for an organic chemistry course",
-    "Create project milestones for building a mobile app in 8 weeks"
-  ]
+  const getAgentIcon = (agent) => {
+    switch (agent) {
+      case 'query':
+        return ChartBarIcon
+      case 'create':
+        return PlusIcon
+      case 'general':
+        return SparklesIcon
+      default:
+        return SparklesIcon
+    }
+  }
+
+  const getAgentBadge = (agent) => {
+    switch (agent) {
+      case 'query':
+        return { text: 'Query Agent', color: 'bg-blue-500' }
+      case 'create':
+        return { text: 'Create Agent', color: 'bg-green-500' }
+      case 'general':
+        return { text: 'Alice AI', color: 'bg-purple-500' }
+      default:
+        return { text: 'Alice AI', color: 'bg-purple-500' }
+    }
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -234,11 +276,11 @@ Exam Schedule:
               <SparklesIcon className="h-8 w-8 text-purple-400" />
             </motion.div>
             <h1 className="text-3xl font-bold text-white">
-              AI Assignment Assistant ✨
+              Alice AI Assistant ✨
             </h1>
           </div>
           
-          {/* Subtle AI Status */}
+          {/* AI Status */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${
@@ -257,315 +299,144 @@ Exam Schedule:
           </div>
         </div>
         <p className="text-lg text-gray-300">
-          Parse syllabi and generate assignments automatically using Alice AI
+          Chat with Alice to manage assignments, parse syllabi, and get academic help
         </p>
       </motion.div>
 
-      {/* Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8"
-      >
-        <div className="border-b border-gray-800">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('syllabus')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'syllabus'
-                  ? 'border-primary-500 text-primary-400'
-                  : 'border-transparent text-gray-300 hover:text-white hover:border-gray-600'
-              }`}
-            >
-              <DocumentTextIcon className="h-5 w-5 inline mr-2" />
-              Parse Syllabus
-            </button>
-            <button
-              onClick={() => setActiveTab('generate')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'generate'
-                  ? 'border-primary-500 text-primary-400'
-                  : 'border-transparent text-gray-300 hover:text-white hover:border-gray-600'
-              }`}
-            >
-              <SparklesIcon className="h-5 w-5 inline mr-2" />
-              Generate Assignments
-            </button>
-          </nav>
+      {/* Chat Interface */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Quick Actions Sidebar */}
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="card"
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              {quickActions.map((action, index) => {
+                const IconComponent = action.icon
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickAction(action.text)}
+                    className="w-full text-left p-3 rounded-lg border border-gray-700 hover:border-gray-600 hover:bg-gray-800 transition-colors group"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <IconComponent className={`h-5 w-5 mt-0.5 ${
+                        action.agent === 'query' ? 'text-blue-400' : 
+                        action.agent === 'create' ? 'text-green-400' : 'text-purple-400'
+                      }`} />
+                      <span className="text-sm text-gray-300 group-hover:text-white">
+                        {action.text}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
 
-      {activeTab === 'syllabus' && (
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-        >
-          {/* Syllabus Input */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-white mb-4">
-              📄 Syllabus Parser
-            </h2>
-            <p className="text-gray-300 mb-6">
-              Paste your syllabus text below and AI will automatically extract classes and assignments.
-            </p>
-            
-            <form onSubmit={handleParseSyllabus}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Syllabus Text
-                </label>
-                <textarea
-                  value={syllabusText}
-                  onChange={(e) => setSyllabusText(e.target.value)}
-                  rows={12}
-                  className="input-field font-mono text-sm"
-                  placeholder="Paste your syllabus here..."
-                />
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setSyllabusText(sampleSyllabus)}
-                  className="btn-secondary flex-1"
+        {/* Main Chat Area */}
+        <div className="lg:col-span-3">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="card h-[600px] flex flex-col"
+          >
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <AnimatePresence>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] ${message.sender === 'user' ? 'order-2' : 'order-1'}`}>
+                      {message.sender === 'ai' && (
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className={`w-6 h-6 rounded-full ${getAgentBadge(message.agent).color} flex items-center justify-center`}>
+                            <SparklesIcon className="h-3 w-3 text-white" />
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {getAgentBadge(message.agent).text}
+                          </span>
+                          {message.actionTaken && (
+                            <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded">
+                              Action Taken
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className={`p-4 rounded-lg ${
+                          message.sender === 'user'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-800 text-gray-100'
+                        }`}
+                      >
+                        <div className="whitespace-pre-wrap">{message.text}</div>
+                        <div className="text-xs opacity-70 mt-2">
+                          {message.timestamp.toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      message.sender === 'user' ? 'bg-primary-600 order-1 mr-3' : 'bg-gray-700 order-2 ml-3'
+                    }`}>
+                      {message.sender === 'user' ? (
+                        <UserIcon className="h-4 w-4 text-white" />
+                      ) : (
+                        <SparklesIcon className="h-4 w-4 text-purple-400" />
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
                 >
-                  Use Sample
-                </button>
+                  <div className="bg-gray-800 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <LoadingSpinner size="small" />
+                      <span className="text-gray-300">Alice is thinking...</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-gray-700 p-4">
+              <form onSubmit={handleSendMessage} className="flex space-x-3">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="Ask Alice about assignments, classes, or anything else..."
+                  className="flex-1 input-field"
+                  disabled={loading}
+                />
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="btn-primary flex-1 flex items-center justify-center"
+                  disabled={loading || !inputMessage.trim()}
+                  className="btn-primary px-4 py-2 flex items-center space-x-2"
                 >
-                  {loading ? (
-                    <LoadingSpinner size="small" />
-                  ) : (
-                    <>
-                      <SparklesIcon className="h-5 w-5 mr-2" />
-                      Parse with AI
-                    </>
-                  )}
+                  <PaperAirplaneIcon className="h-5 w-5" />
                 </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Syllabus Results */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-white mb-4">
-              📊 Parsing Results
-            </h2>
-            
-            {syllabusResults ? (
-              <div className="space-y-6">
-                {/* Classes Created */}
-                {syllabusResults.classes_created.length > 0 && (
-                  <div>
-                    <h3 className="font-medium text-white mb-3 flex items-center">
-                      <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                      Classes Created ({syllabusResults.classes_created.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {syllabusResults.classes_created.map((classItem, index) => (
-                        <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <h4 className="font-medium text-green-900">{classItem.name}</h4>
-                          {classItem.full_name && (
-                            <p className="text-green-700 text-sm">{classItem.full_name}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Assignments Created */}
-                {syllabusResults.assignments_created.length > 0 && (
-                  <div>
-                    <h3 className="font-medium text-white mb-3 flex items-center">
-                      <CheckCircleIcon className="h-5 w-5 text-blue-500 mr-2" />
-                      Assignments Created ({syllabusResults.assignments_created.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {syllabusResults.assignments_created.map((assignment, index) => (
-                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-blue-900">{assignment.title}</h4>
-                            <span className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                              Priority: {assignment.priority === 3 ? 'High' : assignment.priority === 2 ? 'Medium' : 'Low'}
-                            </span>
-                          </div>
-                          <p className="text-blue-700 text-sm">
-                            Due: {new Date(assignment.due_date).toLocaleDateString()}
-                          </p>
-                          {assignment.estimated_hours && (
-                            <p className="text-blue-600 text-xs">
-                              ~{assignment.estimated_hours} hours
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <p className="text-gray-300 text-sm">
-                    ✅ {syllabusResults.message}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">
-                  Results will appear here after parsing
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
-
-      {activeTab === 'generate' && (
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-        >
-          {/* Generation Input */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-white mb-4">
-              🤖 Assignment Generator
-            </h2>
-            <p className="text-gray-300 mb-6">
-              Describe what kind of assignments you need and AI will generate them for you.
-            </p>
-            
-            <form onSubmit={handleGenerateAssignments}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Assignment Prompt
-                </label>
-                <textarea
-                  value={generatePrompt}
-                  onChange={(e) => setGeneratePrompt(e.target.value)}
-                  rows={6}
-                  className="input-field"
-                  placeholder="Describe the assignments you want to generate..."
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Class (Optional)
-                </label>
-                <select
-                  value={selectedClassId}
-                  onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Select a class or create new</option>
-                  {classes.map((classItem) => (
-                    <option key={classItem.id} value={classItem.id}>
-                      {classItem.name} - {classItem.full_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Sample Prompts
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {samplePrompts.map((prompt, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setGeneratePrompt(prompt)}
-                      className="text-left p-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded border border-gray-700 transition-colors"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full flex items-center justify-center"
-              >
-                {loading ? (
-                  <LoadingSpinner size="small" />
-                ) : (
-                  <>
-                    <SparklesIcon className="h-5 w-5 mr-2" />
-                    Generate Assignments
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Generation Results */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-white mb-4">
-              🎯 Generated Assignments
-            </h2>
-            
-            {generateResults ? (
-              <div className="space-y-6">
-                {generateResults.assignments_created.length > 0 && (
-                  <div>
-                    <h3 className="font-medium text-white mb-3 flex items-center">
-                      <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                      Assignments Generated ({generateResults.assignments_created.length})
-                    </h3>
-                    <div className="space-y-3">
-                      {generateResults.assignments_created.map((assignment, index) => (
-                        <div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium text-purple-900">{assignment.title}</h4>
-                            <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
-                              Priority: {assignment.priority === 3 ? 'High' : assignment.priority === 2 ? 'Medium' : 'Low'}
-                            </span>
-                          </div>
-                          {assignment.description && (
-                            <p className="text-purple-700 text-sm mb-2">
-                              {assignment.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between text-xs text-purple-600">
-                            <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
-                            {assignment.estimated_hours && (
-                              <span>~{assignment.estimated_hours} hours</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <p className="text-gray-300 text-sm">
-                    ✅ {generateResults.message}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <SparklesIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">
-                  Generated assignments will appear here
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
       {/* Pending Assignments Approval */}
       {pendingAssignments.length > 0 && (
@@ -573,7 +444,7 @@ Exam Schedule:
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mb-8"
+          className="mt-8"
         >
           <ApprovalInterface
             pendingAssignments={pendingAssignments}

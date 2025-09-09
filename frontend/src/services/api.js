@@ -37,6 +37,7 @@ export const aiAPI = {
   parseSyllabus: (data) => api.post('/ai/parse-syllabus', data),
   generateAssignments: (data) => api.post('/ai/generate-assignments', data),
   getStatus: () => api.get('/ai/status'),
+  chat: (data) => api.post('/ai/chat', data),
 }
 
 // Pending Assignments API

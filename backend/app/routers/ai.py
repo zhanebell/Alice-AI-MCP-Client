@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from pydantic import BaseModel
 
 from ..models.database import get_db
 from ..services.ai_service import AIService
@@ -56,3 +57,40 @@ def ai_status(ai_service: AIService = Depends(get_ai_service)):
         "api_key_configured": ai_service.groq_api_key != "dummy_key_for_now",
         "mock_mode": not groq_available
     }
+
+# Chat schemas
+class ChatMessage(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
+    agent_used: str
+    action_taken: bool
+    data: dict = {}
+
+@router.post("/chat", response_model=ChatResponse)
+def chat(request: ChatMessage, db: Session = Depends(get_db), ai_service: AIService = Depends(get_ai_service)):
+    """
+    Chat with AI assistant using agentic system
+    """
+    try:
+        print(f"\n=== CHAT ENDPOINT ===")
+        print(f"Incoming Message: {request.message}")
+        
+        response, agent_used, action_taken, data = ai_service.chat(request.message, db)
+        
+        print(f"Final Response: {response}")
+        print(f"Agent Used: {agent_used}")
+        print(f"Action Taken: {action_taken}")
+        print(f"Data: {data}")
+        print(f"====================\n")
+        
+        return ChatResponse(
+            response=response,
+            agent_used=agent_used,
+            action_taken=action_taken,
+            data=data
+        )
+    except Exception as e:
+        print(f"CHAT ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
