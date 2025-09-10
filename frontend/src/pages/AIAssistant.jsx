@@ -25,7 +25,7 @@ function AIAssistant() {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm Alice, your AI assignment assistant. 👋\n\nI can help you with:\n• **Query information** about your assignments and classes\n• **Create new assignments** or parse syllabi\n• **General conversation** about your academic work\n\nWhat would you like to do today?",
+      text: "Hello! I'm Alice, your AI assignment assistant. 👋\n\nI can help you with:\n• Query information about your assignments and classes\n• Create new assignments or parse syllabi\n• General conversation about your academic work\n\nWhat would you like to do today?",
       sender: 'ai',
       timestamp: new Date(),
       agent: 'general'
@@ -299,7 +299,7 @@ function AIAssistant() {
           </div>
         </div>
         <p className="text-lg text-gray-300">
-          Chat with Alice to manage assignments, parse syllabi, and get academic help
+          Productivity Reimagined
         </p>
       </motion.div>
 

@@ -136,7 +136,7 @@ function Dashboard() {
         className="mb-8"
       >
         <h1 className="text-3xl font-bold text-white mb-2">
-          Welcome back! 📚
+          Welcome back Zhane!
         </h1>
         <p className="text-lg text-gray-300">
           Here's what's on your plate today

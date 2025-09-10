@@ -4,29 +4,32 @@ echo    Alice AI Assignment Tracker Startup
 echo ============================================
 echo.
 
+REM Set the absolute path to the project directory
+set "PROJECT_DIR=c:\Users\zhane\OneDrive\Desktop\Alice-AI-MCP-Client"
+
 REM Check if we're in the correct directory
-if not exist "backend\main.py" (
-    echo Error: backend\main.py not found!
-    echo Please run this script from the Alice-AI-MCP-Client directory
+if not exist "%PROJECT_DIR%\backend\main.py" (
+    echo Error: %PROJECT_DIR%\backend\main.py not found!
+    echo Please check that the project directory exists
     pause
     exit /b 1
 )
 
-if not exist "frontend\package.json" (
-    echo Error: frontend\package.json not found!
-    echo Please run this script from the Alice-AI-MCP-Client directory
+if not exist "%PROJECT_DIR%\frontend\package.json" (
+    echo Error: %PROJECT_DIR%\frontend\package.json not found!
+    echo Please check that the project directory exists
     pause
     exit /b 1
 )
 
 echo [1/4] Starting Backend Server (FastAPI on port 8001)...
-start /min "Alice AI Backend" cmd /c "cd backend && python main.py"
+start /min "Alice AI Backend" cmd /c "cd /d "%PROJECT_DIR%\backend" && python main.py"
 
 echo [2/4] Waiting for backend to start...
 timeout /t 3 /nobreak > nul
 
 echo [3/4] Starting Frontend Development Server (Vite on port 3000)...
-start /min "Alice AI Frontend" cmd /c "cd frontend && npm run dev"
+start /min "Alice AI Frontend" cmd /c "cd /d "%PROJECT_DIR%\frontend" && npm run dev"
 
 echo [4/4] Opening application in browser...
 timeout /t 5 /nobreak > nul

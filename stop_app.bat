@@ -4,6 +4,9 @@ echo   Alice AI Assignment Tracker Shutdown
 echo ============================================
 echo.
 
+REM Set the absolute path to the project directory
+set "PROJECT_DIR=c:\Users\zhane\OneDrive\Desktop\Alice-AI-MCP-Client"
+
 echo Stopping all Alice AI services...
 
 REM Kill processes running on ports 8001 and 3000
