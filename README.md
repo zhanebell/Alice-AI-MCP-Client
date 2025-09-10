@@ -13,28 +13,39 @@ A comprehensive assignment tracking application with AI integration, built with 
 
 ## ⚡ Quick Start
 
-### Option 1: Silent Background Mode (Recommended)
-For a clean desktop experience with no visible terminal windows:
+### Option 1: Docker (Recommended)
+The easiest way to run the application with consistent environment:
+
+```bash
+# Start the application
+docker-compose up --build
+
+# Or run in background
+docker-compose up -d --build
+
+# Stop the application
+docker-compose down
+```
+
+**Access the app:**
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8001`
+- API Docs: `http://localhost:8001/docs`
+
+📖 See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed Docker instructions.
+
+### Option 2: Native Setup (Legacy)
+For local development without Docker:
 
 **Windows:**
 ```bash
 # Double-click or run:
-start_app_silent.bat
-# OR
-start_app_silent.ps1
+start_app.bat
 ```
 
 **To stop the application:**
 - Use the red "Shutdown" button in the app's navigation bar, OR
-- Run `stop_app.bat` or `stop_app.ps1`
-
-### Option 2: Standard Mode (with visible terminals)
-```bash
-# Windows:
-start_app.bat
-# OR
-start_app.ps1
-```
+- Run `stop_app.bat`
 
 ### What happens during startup:
 1. 🔧 Backend server starts on `http://localhost:8001`

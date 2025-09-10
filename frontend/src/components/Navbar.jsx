@@ -4,49 +4,19 @@ import {
   HomeIcon, 
   CalendarIcon, 
   AcademicCapIcon, 
-  SparklesIcon,
-  PowerIcon
+  SparklesIcon
 } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
-import { shutdownApp } from '../services/api'
-import toast from 'react-hot-toast'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Calendar', href: '/calendar', icon: CalendarIcon },
-  { name: 'Classes', href: '/classes', icon: AcademicCapIcon },
+  { name: 'Classes & Subjects', href: '/classes', icon: AcademicCapIcon },
   { name: 'AI Assistant', href: '/ai', icon: SparklesIcon },
 ]
 
 function Navbar() {
   const location = useLocation()
-  const [isShuttingDown, setIsShuttingDown] = useState(false)
-
-  const handleShutdown = async () => {
-    if (isShuttingDown) return
-    
-    const confirmed = window.confirm(
-      'Are you sure you want to shutdown the Alice AI application? This will close both the backend and frontend servers.'
-    )
-    
-    if (!confirmed) return
-
-    setIsShuttingDown(true)
-    
-    try {
-      toast.loading('Shutting down application...', { duration: 2000 })
-      await shutdownApp()
-      
-      // Give a moment for the toast to show, then close the window
-      setTimeout(() => {
-        window.close()
-      }, 2000)
-    } catch (error) {
-      console.error('Error shutting down app:', error)
-      toast.error('Error shutting down application')
-      setIsShuttingDown(false)
-    }
-  }
 
   return (
     <nav className="bg-black shadow-lg border-b border-gray-800">
@@ -89,35 +59,6 @@ function Navbar() {
               })}
             </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="hidden md:block"
-            >
-              <div className="text-sm text-gray-300">
-                Your intelligent assignment assistant
-              </div>
-            </motion.div>
-            
-            {/* Shutdown Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleShutdown}
-              disabled={isShuttingDown}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                isShuttingDown
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-              title="Shutdown Application"
-            >
-              <PowerIcon className="w-4 h-4 mr-2" />
-              {isShuttingDown ? 'Shutting Down...' : 'Shutdown'}
-            </motion.button>
-          </div>
         </div>
       </div>
 
@@ -143,22 +84,6 @@ function Navbar() {
               </Link>
             )
           })}
-          
-          {/* Mobile Shutdown Button */}
-          <button
-            onClick={handleShutdown}
-            disabled={isShuttingDown}
-            className={`block w-full text-left px-3 py-2 text-base font-medium transition-colors duration-200 ${
-              isShuttingDown
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'text-red-400 hover:text-red-300 hover:bg-gray-950'
-            }`}
-          >
-            <div className="flex items-center">
-              <PowerIcon className="w-5 h-5 mr-3" />
-              {isShuttingDown ? 'Shutting Down...' : 'Shutdown App'}
-            </div>
-          </button>
         </div>
       </div>
     </nav>

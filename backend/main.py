@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from app.models.database import get_db, engine
 from app.models.models import Base, Class, Assignment, AssignmentStatus, PendingAssignment
 from app.services.ai_service import AIService
-from app.routers import classes, assignments, ai, pending_assignments, pending_assignments
+from app.routers import classes, assignments, ai, pending_assignments
 
 # Load environment variables from parent directory
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))

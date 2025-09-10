@@ -1,0 +1,24 @@
+# Backend .dockerignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+*.log

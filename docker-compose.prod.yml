@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/assignments.db:/app/assignments.db
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    networks:
+      - alice-ai-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8001
+    networks:
+      - alice-ai-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  alice-ai-network:
+    driver: bridge

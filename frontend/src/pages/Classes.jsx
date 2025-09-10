@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   PlusIcon, 
@@ -15,6 +16,7 @@ import EditClassModal from '../components/EditClassModal'
 import EditAssignmentModal from '../components/EditAssignmentModal'
 
 function Classes() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [classes, setClasses] = useState([])
   const [assignments, setAssignments] = useState([])
   const [selectedClass, setSelectedClass] = useState(null)
@@ -61,7 +63,17 @@ function Classes() {
       setLoading(true)
       const response = await classesAPI.getAll()
       setClasses(response.data)
-      if (response.data.length > 0 && !selectedClass) {
+      
+      // Check if there's a classId in URL params
+      const classIdFromUrl = searchParams.get('classId')
+      if (classIdFromUrl && response.data.length > 0) {
+        const targetClass = response.data.find(c => c.id === parseInt(classIdFromUrl))
+        if (targetClass) {
+          setSelectedClass(targetClass)
+        } else if (!selectedClass) {
+          setSelectedClass(response.data[0])
+        }
+      } else if (response.data.length > 0 && !selectedClass) {
         setSelectedClass(response.data[0])
       }
     } catch (error) {
@@ -209,6 +221,11 @@ function Classes() {
     setEditingAssignment(null)
   }
 
+  const handleClassSelection = (classItem) => {
+    setSelectedClass(classItem)
+    setSearchParams({ classId: classItem.id.toString() })
+  }
+
   const updateAssignmentStatus = async (id, status) => {
     try {
       await assignmentsAPI.updateStatus(id, status)
@@ -254,7 +271,7 @@ function Classes() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              Classes & Subjects 📚
+              Classes & Subjects
             </h1>
             <p className="text-lg text-gray-300">
               Organize your assignments by class or subject
@@ -298,7 +315,7 @@ function Classes() {
                   <motion.div
                     key={classItem.id}
                     whileHover={{ scale: 1.02 }}
-                    onClick={() => setSelectedClass(classItem)}
+                    onClick={() => handleClassSelection(classItem)}
                     className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedClass?.id === classItem.id
                         ? 'bg-primary-900/30 border-2 border-primary-400'

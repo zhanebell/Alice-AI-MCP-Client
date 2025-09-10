@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline'
@@ -198,16 +199,21 @@ function Calendar() {
                       {hasAssignments && (
                         <div className="space-y-1">
                           {dayAssignments.slice(0, 2).map((assignment, idx) => (
-                            <div
-                              key={idx}
-                              className={`text-xs p-1 rounded truncate ${
-                                assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                assignment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}
+                            <Link 
+                              key={idx} 
+                              to={`/classes?classId=${assignment.class_id}`} 
+                              className="block"
                             >
-                              {assignment.title}
-                            </div>
+                              <div
+                                className={`text-xs p-1 rounded truncate hover:opacity-80 transition-opacity ${
+                                  assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  assignment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {assignment.title}
+                              </div>
+                            </Link>
                           ))}
                           {dayAssignments.length > 2 && (
                             <div className="text-xs text-gray-500">
@@ -251,48 +257,33 @@ function Calendar() {
                 </div>
               ) : (
                 selectedAssignments.map((assignment) => (
-                  <div
-                    key={assignment.id}
-                    className="border border-gray-800 rounded-lg p-4 hover:shadow-lg transition-shadow bg-gray-950"
+                  <Link 
+                    key={assignment.id} 
+                    to={`/classes?classId=${assignment.class_id}`} 
+                    className="block"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-white">{assignment.title}</h4>
-                      <span className={`badge status-${assignment.status}`}>
-                        {assignment.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    
-                    {assignment.description && (
-                      <p className="text-sm text-gray-300 mb-3">
-                        {assignment.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                      <span>Priority: {assignment.priority === 3 ? 'High' : assignment.priority === 2 ? 'Medium' : 'Low'}</span>
-                      {assignment.estimated_hours && (
-                        <span>~{assignment.estimated_hours}h</span>
-                      )}
-                    </div>
-
-                    {assignment.status !== 'completed' && (
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => updateAssignmentStatus(assignment.id, 'in_progress')}
-                          className="btn-secondary text-xs py-1 px-2"
-                          disabled={assignment.status === 'in_progress'}
-                        >
-                          {assignment.status === 'in_progress' ? 'In Progress' : 'Start'}
-                        </button>
-                        <button
-                          onClick={() => updateAssignmentStatus(assignment.id, 'completed')}
-                          className="btn-success text-xs py-1 px-2"
-                        >
-                          Complete
-                        </button>
+                    <div className="border border-gray-800 rounded-lg p-4 hover:shadow-lg hover:border-gray-700 transition-all bg-gray-950">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-white">{assignment.title}</h4>
+                        <span className={`badge status-${assignment.status}`}>
+                          {assignment.status.replace('_', ' ')}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                    
+                      {assignment.description && (
+                        <p className="text-sm text-gray-300 mb-3">
+                          {assignment.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                        <span>Priority: {assignment.priority === 3 ? 'High' : assignment.priority === 2 ? 'Medium' : 'Low'}</span>
+                        {assignment.estimated_hours && (
+                          <span>~{assignment.estimated_hours}h</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
                 ))
               )}
             </div>
