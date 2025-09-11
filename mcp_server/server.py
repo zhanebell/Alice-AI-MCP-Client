@@ -25,7 +25,7 @@ import mcp.server.stdio
 import mcp.types as types
 
 # Database connection
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'backend', 'assignments.db')
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), '..', 'assignments.db')
 
 def get_db_connection():
     """Get a database connection and ensure tables exist"""
@@ -184,13 +184,16 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
     if name == "create_class":
         conn = get_db_connection()
         try:
+            now = datetime.now().isoformat()
             cursor = conn.execute(
-                "INSERT INTO classes (name, full_name, description, color) VALUES (?, ?, ?, ?)",
+                "INSERT INTO classes (name, full_name, description, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     arguments["name"],
                     arguments.get("full_name"),
                     arguments.get("description"),
-                    arguments.get("color", "#3B82F6")
+                    arguments.get("color", "#3B82F6"),
+                    now,
+                    now
                 )
             )
             conn.commit()
@@ -242,17 +245,20 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
                     text="Error: Invalid date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"
                 )]
             
+            now = datetime.now().isoformat()
             cursor = conn.execute(
                 """INSERT INTO assignments 
-                   (title, description, due_date, class_id, priority, estimated_hours) 
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                   (title, description, due_date, class_id, priority, estimated_hours, created_at, updated_at) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     arguments["title"],
                     arguments.get("description"),
                     due_date,
                     arguments["class_id"],
                     arguments.get("priority", 1),
-                    arguments.get("estimated_hours")
+                    arguments.get("estimated_hours"),
+                    now,
+                    now
                 )
             )
             conn.commit()

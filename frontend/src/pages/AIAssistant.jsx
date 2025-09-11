@@ -284,16 +284,22 @@ function AIAssistant() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${
-                aiStatus?.groq_connected ? 'bg-green-400' : 'bg-red-400'
+                aiStatus?.initialized && aiStatus?.current_model_available ? 'bg-green-400' : 'bg-red-400'
               }`} />
               <span className="text-xs text-gray-300">
-                {aiStatus?.groq_connected ? 'AI Connected' : 'AI Offline'}
+                {aiStatus?.initialized && aiStatus?.current_model_available ? 'AI Connected' : 'AI Offline'}
               </span>
             </div>
-            {aiStatus?.mock_mode && (
+            {aiStatus?.current_model && (
               <div className="flex items-center space-x-2">
-                <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400" />
-                <span className="text-xs text-yellow-400">Mock Mode</span>
+                <BoltIcon className="h-4 w-4 text-blue-400" />
+                <span className="text-xs text-blue-400">{aiStatus.current_model}</span>
+              </div>
+            )}
+            {aiStatus?.mcp_tools_count && (
+              <div className="flex items-center space-x-2">
+                <ChartBarIcon className="h-4 w-4 text-green-400" />
+                <span className="text-xs text-green-400">{aiStatus.mcp_tools_count} tools</span>
               </div>
             )}
           </div>

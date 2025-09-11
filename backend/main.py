@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 
 from app.models.database import get_db, engine
 from app.models.models import Base, Class, Assignment, AssignmentStatus, PendingAssignment
-from app.services.ai_service import AIService
 from app.routers import classes, assignments, ai, pending_assignments
 
 # Load environment variables from parent directory
@@ -42,6 +41,32 @@ app.include_router(classes.router, prefix="/api/classes", tags=["classes"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["assignments"])
 app.include_router(pending_assignments.router, prefix="/api/pending-assignments", tags=["pending-assignments"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup."""
+    print("🚀 Starting Assignment Tracker API...")
+    print(f"Environment: {os.getenv('DEBUG', 'False')}")
+    
+    # Test AI configuration
+    try:
+        from app.services.ai_config import AIConfig
+        print(f"📊 Available AI models: {list(AIConfig.MODELS.keys())}")
+        
+        # Check which models are available
+        available_models = []
+        for model_key in AIConfig.MODELS.keys():
+            if AIConfig.is_model_available(model_key):
+                available_models.append(model_key)
+        
+        print(f"✅ Available AI models: {available_models}")
+        if not available_models:
+            print("⚠️  No AI models available - check API keys in environment")
+        else:
+            print(f"🤖 Default AI model: {AIConfig.get_default_model()}")
+            
+    except Exception as e:
+        print(f"❌ Error initializing AI system: {e}")
 
 @app.get("/")
 async def root():

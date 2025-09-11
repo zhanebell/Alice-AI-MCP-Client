@@ -3,13 +3,15 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - "8001:8001"
     volumes:
       # Mount the backend code for development hot reload
       - ./backend:/app
+      # Mount the MCP server (override the backend mount for this specific directory)
+      - ./mcp_server:/app/mcp_server
       # Persist database data
       - ./backend/assignments.db:/app/assignments.db
       # Mount the .env file so the container can access environment variables

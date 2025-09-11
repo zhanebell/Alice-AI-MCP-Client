@@ -10,13 +10,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better Docker layer caching
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
-COPY . .
+# Copy the backend application code
+COPY backend/ .
+
+# Copy MCP server
+COPY mcp_server/ /app/mcp_server/
 
 # Create directory for database if it doesn't exist
 RUN mkdir -p /app/data
