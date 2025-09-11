@@ -27,7 +27,7 @@ class LLMClient:
     def __init__(self, model_key: Optional[str] = None):
         self.model_key = model_key or AIConfig.get_default_model()
         self.config = AIConfig.get_model_config(self.model_key)
-        self._client = None
+        self._client: Optional[Any] = None
         self._initialize_client()
     
     def _initialize_client(self):
@@ -35,6 +35,8 @@ class LLMClient:
         try:
             if self.config.provider == LLMProvider.GROQ:
                 import groq
+                if not self.config.api_key_env:
+                    raise ValueError("Missing API key environment variable configuration")
                 api_key = os.getenv(self.config.api_key_env)
                 if not api_key:
                     raise ValueError(f"Missing API key: {self.config.api_key_env}")
@@ -42,6 +44,8 @@ class LLMClient:
                 
             elif self.config.provider == LLMProvider.OPENAI:
                 import openai
+                if not self.config.api_key_env:
+                    raise ValueError("Missing API key environment variable configuration")
                 api_key = os.getenv(self.config.api_key_env)
                 if not api_key:
                     raise ValueError(f"Missing API key: {self.config.api_key_env}")
@@ -49,6 +53,8 @@ class LLMClient:
                 
             elif self.config.provider == LLMProvider.ANTHROPIC:
                 import anthropic
+                if not self.config.api_key_env:
+                    raise ValueError("Missing API key environment variable configuration")
                 api_key = os.getenv(self.config.api_key_env)
                 if not api_key:
                     raise ValueError(f"Missing API key: {self.config.api_key_env}")
@@ -96,6 +102,9 @@ class LLMClient:
     
     def _groq_chat(self, messages: List[ChatMessage], temperature: float, max_tokens: int) -> ChatResponse:
         """Handle Groq chat completion"""
+        if not self._client:
+            raise RuntimeError("Groq client not initialized")
+            
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
         
         response = self._client.chat.completions.create(
@@ -118,6 +127,9 @@ class LLMClient:
     
     def _openai_chat(self, messages: List[ChatMessage], temperature: float, max_tokens: int) -> ChatResponse:
         """Handle OpenAI chat completion"""
+        if not self._client:
+            raise RuntimeError("OpenAI client not initialized")
+            
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
         
         response = self._client.chat.completions.create(
@@ -132,14 +144,17 @@ class LLMClient:
             model=self.config.model_name,
             provider="openai",
             usage={
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens
+                "prompt_tokens": getattr(response.usage, 'prompt_tokens', 0) if response.usage else 0,
+                "completion_tokens": getattr(response.usage, 'completion_tokens', 0) if response.usage else 0,
+                "total_tokens": getattr(response.usage, 'total_tokens', 0) if response.usage else 0
             }
         )
     
     def _anthropic_chat(self, messages: List[ChatMessage], temperature: float, max_tokens: int) -> ChatResponse:
         """Handle Anthropic Claude chat completion"""
+        if not self._client:
+            raise RuntimeError("Anthropic client not initialized")
+            
         # Claude API has a different format - system message separate
         system_message = None
         formatted_messages = []
@@ -167,14 +182,17 @@ class LLMClient:
             model=self.config.model_name,
             provider="anthropic",
             usage={
-                "prompt_tokens": getattr(response.usage, 'input_tokens', 0),
-                "completion_tokens": getattr(response.usage, 'output_tokens', 0),
-                "total_tokens": getattr(response.usage, 'input_tokens', 0) + getattr(response.usage, 'output_tokens', 0)
+                "prompt_tokens": getattr(response.usage, 'input_tokens', 0) if response.usage else 0,
+                "completion_tokens": getattr(response.usage, 'output_tokens', 0) if response.usage else 0,
+                "total_tokens": (getattr(response.usage, 'input_tokens', 0) + getattr(response.usage, 'output_tokens', 0)) if response.usage else 0
             }
         )
     
     def _ollama_chat(self, messages: List[ChatMessage], temperature: float, max_tokens: int) -> ChatResponse:
         """Handle Ollama chat completion"""
+        if not self._client:
+            raise RuntimeError("Ollama client not initialized")
+            
         import requests
         
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
